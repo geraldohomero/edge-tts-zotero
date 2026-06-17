@@ -3,7 +3,15 @@
  */
 
 import { getSelectedText, isReaderActive } from "./reader";
-import { speak, stop, getState, getVoices, setPlaybackRate, pause, resume } from "./tts";
+import {
+  speak,
+  stop,
+  getState,
+  getVoices,
+  setPlaybackRate,
+  pause,
+  resume,
+} from "./tts";
 import { getString } from "../utils/locale";
 import { getPref, setPref } from "../utils/prefs";
 
@@ -109,13 +117,10 @@ async function handleReadAloud(): Promise<void> {
 
   const text = await getSelectedText();
   if (!text) {
-    new ztoolkit.ProgressWindow(
-      addon.data.config.addonName,
-      {
-        closeOnClick: true,
-        closeTime: 3000,
-      },
-    )
+    new ztoolkit.ProgressWindow(addon.data.config.addonName, {
+      closeOnClick: true,
+      closeTime: 3000,
+    })
       .createLine({
         text: getString("tts-no-text"),
         type: "default",
@@ -159,11 +164,13 @@ export function registerReaderSelectionPopup() {
         container.style.justifyContent = "space-between";
         container.style.gap = "8px";
         container.style.padding = "5px 10px";
-        container.style.borderTop = "1px solid var(--z-theme-border, rgba(128, 128, 128, 0.2))";
+        container.style.borderTop =
+          "1px solid var(--z-theme-border, rgba(128, 128, 128, 0.2))";
         container.style.background = "transparent";
         container.style.color = "inherit";
         container.style.fontSize = "11px";
-        container.style.fontFamily = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+        container.style.fontFamily =
+          "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
         container.style.borderBottomLeftRadius = "6px";
         container.style.borderBottomRightRadius = "6px";
         container.style.width = "370px";
@@ -206,7 +213,7 @@ export function registerReaderSelectionPopup() {
         pauseBtn.style.minWidth = "28px";
         pauseBtn.style.transition = "all 0.2s ease";
         pauseBtn.textContent = "⏸️";
-        
+
         // Stop Button
         const stopBtn = doc.createElement("button");
         stopBtn.style.background = "#ef4444";
@@ -336,9 +343,11 @@ export function registerReaderSelectionPopup() {
         const localeSelect = doc.createElement("select");
         localeSelect.style.padding = "2px 4px";
         localeSelect.style.borderRadius = "4px";
-        localeSelect.style.border = "1px solid var(--z-theme-border, rgba(128, 128, 128, 0.3))";
+        localeSelect.style.border =
+          "1px solid var(--z-theme-border, rgba(128, 128, 128, 0.3))";
         localeSelect.style.maxWidth = "60px";
-        localeSelect.style.background = "var(--z-theme-combobox-background, #ffffff)";
+        localeSelect.style.background =
+          "var(--z-theme-combobox-background, #ffffff)";
         localeSelect.style.color = "var(--z-theme-combobox-color, #333333)";
         localeSelect.style.outline = "none";
         localeSelect.style.cursor = "pointer";
@@ -352,9 +361,11 @@ export function registerReaderSelectionPopup() {
         const voiceSelect = doc.createElement("select");
         voiceSelect.style.padding = "2px 4px";
         voiceSelect.style.borderRadius = "4px";
-        voiceSelect.style.border = "1px solid var(--z-theme-border, rgba(128, 128, 128, 0.3))";
+        voiceSelect.style.border =
+          "1px solid var(--z-theme-border, rgba(128, 128, 128, 0.3))";
         voiceSelect.style.maxWidth = "100px";
-        voiceSelect.style.background = "var(--z-theme-combobox-background, #ffffff)";
+        voiceSelect.style.background =
+          "var(--z-theme-combobox-background, #ffffff)";
         voiceSelect.style.color = "var(--z-theme-combobox-color, #333333)";
         voiceSelect.style.outline = "none";
         voiceSelect.style.cursor = "pointer";
@@ -365,209 +376,241 @@ export function registerReaderSelectionPopup() {
         voiceSelect.appendChild(loadingOpt);
 
         // Fetch voices and populate asynchronously
-        getVoices().then((voices) => {
-          localeSelect.textContent = "";
-          voiceSelect.textContent = "";
-
-          // Allowed locales whitelist
-          const ALLOWED_LOCALES = [
-            "pt-BR",
-            "en-US",
-            "en-GB",
-            "it-IT",
-            "fr-FR",
-            "es-ES",
-            "es-AR",
-            "es-MX",
-            "de-DE"
-          ];
-
-          // Read saved locale filter preference, or default to current voice's locale
-          let currentVoice = getPref("voice") || "pt-BR-FranciscaNeural";
-          const currentVoiceObj = voices.find(v => v.shortName === currentVoice);
-          let activeLocale = getPref("selectedLocaleFilter") || (currentVoiceObj ? currentVoiceObj.locale : "pt-BR");
-
-          // All unique locales from voices list
-          const allLocales = Array.from(new Set(voices.map(v => v.locale)));
-
-          // Get unique locales filtered by whitelist and sorted (pt-BR first)
-          const locales = allLocales
-            .filter(locale => ALLOWED_LOCALES.includes(locale))
-            .sort((a, b) => {
-              if (a === "pt-BR") return -1;
-              if (b === "pt-BR") return 1;
-              return a.localeCompare(b);
-            });
-
-          // If activeLocale is not in the whitelist but is a valid locale, dynamically add it
-          if (activeLocale && allLocales.includes(activeLocale) && !locales.includes(activeLocale)) {
-            locales.push(activeLocale);
-            locales.sort((a, b) => {
-              if (a === "pt-BR") return -1;
-              if (b === "pt-BR") return 1;
-              return a.localeCompare(b);
-            });
-          }
-
-          // Function to render locale options
-          const renderLocaleOptions = () => {
+        getVoices()
+          .then((voices) => {
             localeSelect.textContent = "";
-            for (const locale of locales) {
-              const opt = doc.createElement("option");
-              opt.value = locale;
-              opt.textContent = locale;
-              if (locale === activeLocale) {
-                opt.selected = true;
-              }
-              localeSelect.appendChild(opt);
-            }
-            const otherOpt = doc.createElement("option");
-            otherOpt.value = "_other";
-            otherOpt.textContent = "+ Outro...";
-            localeSelect.appendChild(otherOpt);
-          };
-
-          renderLocaleOptions();
-
-          // Helper to get clean name
-          const cleanVoiceName = (name: string) => {
-            const parts = name.split("-");
-            if (parts.length >= 3) {
-              return parts[2].replace("Neural", "").replace("Multilingual", "");
-            }
-            return name;
-          };
-
-          // Populate voiceSelect function
-          const populateVoicesForLocale = (localeStr: string) => {
             voiceSelect.textContent = "";
-            const filteredVoices = voices.filter(v => v.locale === localeStr);
-            for (const v of filteredVoices) {
-              const opt = doc.createElement("option");
-              opt.value = v.shortName;
-              opt.textContent = cleanVoiceName(v.shortName);
-              voiceSelect.appendChild(opt);
+
+            // Allowed locales whitelist
+            const ALLOWED_LOCALES = [
+              "pt-BR",
+              "en-US",
+              "en-GB",
+              "it-IT",
+              "fr-FR",
+              "es-ES",
+              "es-AR",
+              "es-MX",
+              "de-DE",
+            ];
+
+            // Read saved locale filter preference, or default to current voice's locale
+            const currentVoice = getPref("voice") || "pt-BR-FranciscaNeural";
+            const currentVoiceObj = voices.find(
+              (v) => v.shortName === currentVoice,
+            );
+            let activeLocale =
+              getPref("selectedLocaleFilter") ||
+              (currentVoiceObj ? currentVoiceObj.locale : "pt-BR");
+
+            // All unique locales from voices list
+            const allLocales = Array.from(new Set(voices.map((v) => v.locale)));
+
+            // Get unique locales filtered by whitelist and sorted (pt-BR first)
+            const locales = allLocales
+              .filter((locale) => ALLOWED_LOCALES.includes(locale))
+              .sort((a, b) => {
+                if (a === "pt-BR") return -1;
+                if (b === "pt-BR") return 1;
+                return a.localeCompare(b);
+              });
+
+            // If activeLocale is not in the whitelist but is a valid locale, dynamically add it
+            if (
+              activeLocale &&
+              allLocales.includes(activeLocale) &&
+              !locales.includes(activeLocale)
+            ) {
+              locales.push(activeLocale);
+              locales.sort((a, b) => {
+                if (a === "pt-BR") return -1;
+                if (b === "pt-BR") return 1;
+                return a.localeCompare(b);
+              });
             }
 
-            // Set voice value
-            let voiceToSelect = getPref("voice") || "";
-            const matchesLocale = filteredVoices.some(v => v.shortName === voiceToSelect);
-            if (!matchesLocale && filteredVoices.length > 0) {
-              voiceToSelect = filteredVoices[0].shortName;
-              setPref("voice", voiceToSelect);
-            }
-            voiceSelect.value = voiceToSelect;
-          };
-
-          // Initialize voice list
-          populateVoicesForLocale(activeLocale);
-
-          let lastValue = activeLocale;
-
-          // Add listener to localeSelect
-          localeSelect.addEventListener("change", (e: any) => {
-            const val = e.target.value;
-            if (val === "_other") {
-              const otherLocales = allLocales.filter(loc => !ALLOWED_LOCALES.includes(loc)).sort();
-              
-              let chosenLocale: string | null = null;
-              let promptService: any = null;
-              try {
-                const g = globalThis as any;
-                const win = Zotero.getMainWindow() as any;
-                if (g.Services && g.Services.prompt) {
-                  promptService = g.Services.prompt;
-                } else if (win && win.Services && win.Services.prompt) {
-                  promptService = win.Services.prompt;
-                } else if (g.ChromeUtils && typeof g.ChromeUtils.importESModule === "function") {
-                  const { Services: importedServices } = g.ChromeUtils.importESModule("resource://gre/modules/Services.sys.mjs");
-                  if (importedServices && importedServices.prompt) {
-                    promptService = importedServices.prompt;
-                  }
+            // Function to render locale options
+            const renderLocaleOptions = () => {
+              localeSelect.textContent = "";
+              for (const locale of locales) {
+                const opt = doc.createElement("option");
+                opt.value = locale;
+                opt.textContent = locale;
+                if (locale === activeLocale) {
+                  opt.selected = true;
                 }
-              } catch (err) {
-                ztoolkit.log("Error getting prompt service: " + err);
+                localeSelect.appendChild(opt);
+              }
+              const otherOpt = doc.createElement("option");
+              otherOpt.value = "_other";
+              otherOpt.textContent = "+ Outro...";
+              localeSelect.appendChild(otherOpt);
+            };
+
+            renderLocaleOptions();
+
+            // Helper to get clean name
+            const cleanVoiceName = (name: string) => {
+              const parts = name.split("-");
+              if (parts.length >= 3) {
+                return parts[2]
+                  .replace("Neural", "")
+                  .replace("Multilingual", "");
+              }
+              return name;
+            };
+
+            // Populate voiceSelect function
+            const populateVoicesForLocale = (localeStr: string) => {
+              voiceSelect.textContent = "";
+              const filteredVoices = voices.filter(
+                (v) => v.locale === localeStr,
+              );
+              for (const v of filteredVoices) {
+                const opt = doc.createElement("option");
+                opt.value = v.shortName;
+                opt.textContent = cleanVoiceName(v.shortName);
+                voiceSelect.appendChild(opt);
               }
 
-              if (promptService) {
-                try {
-                  const selection = { value: 0 };
-                  let ok = false;
-                  try {
-                    // Try modern Gecko signature (without length parameter)
-                    ok = promptService.select(
-                      Zotero.getMainWindow(),
-                      "Outro Idioma",
-                      "Selecione um idioma da lista:",
-                      otherLocales,
-                      selection
-                    );
-                  } catch (e) {
-                    // Fallback to legacy Gecko signature (with length parameter)
-                    ok = promptService.select(
-                      Zotero.getMainWindow(),
-                      "Outro Idioma",
-                      "Selecione um idioma da lista:",
-                      otherLocales.length,
-                      otherLocales,
-                      selection
-                    );
-                  }
-
-                  if (ok) {
-                    chosenLocale = otherLocales[selection.value];
-                  }
-                } catch (err) {
-                  ztoolkit.log("Error showing select prompt: " + err);
-                }
+              // Set voice value
+              let voiceToSelect = getPref("voice") || "";
+              const matchesLocale = filteredVoices.some(
+                (v) => v.shortName === voiceToSelect,
+              );
+              if (!matchesLocale && filteredVoices.length > 0) {
+                voiceToSelect = filteredVoices[0].shortName;
+                setPref("voice", voiceToSelect);
               }
+              voiceSelect.value = voiceToSelect;
+            };
 
-              // Fallback to text input if select prompt failed or wasn't available
-              if (!promptService && !chosenLocale) {
+            // Initialize voice list
+            populateVoicesForLocale(activeLocale);
+
+            let lastValue = activeLocale;
+
+            // Add listener to localeSelect
+            localeSelect.addEventListener("change", (e: any) => {
+              const val = e.target.value;
+              if (val === "_other") {
+                const otherLocales = allLocales
+                  .filter((loc) => !ALLOWED_LOCALES.includes(loc))
+                  .sort();
+
+                let chosenLocale: string | null = null;
+                let promptService: any = null;
                 try {
-                  const promptWin = (doc.defaultView || Zotero.getMainWindow()) as any;
-                  const input = promptWin.prompt("Digite o código do idioma (ex: ja-JP, zh-CN, ru-RU):", "");
-                  if (input && input.trim()) {
-                    const cleanInput = input.trim().toLowerCase();
-                    chosenLocale = allLocales.find(loc => loc.toLowerCase() === cleanInput) || null;
-                    if (!chosenLocale) {
-                      promptWin.alert("Idioma '" + input + "' não encontrado!");
+                  const g = globalThis as any;
+                  const win = Zotero.getMainWindow() as any;
+                  if (g.Services && g.Services.prompt) {
+                    promptService = g.Services.prompt;
+                  } else if (win && win.Services && win.Services.prompt) {
+                    promptService = win.Services.prompt;
+                  } else if (
+                    g.ChromeUtils &&
+                    typeof g.ChromeUtils.importESModule === "function"
+                  ) {
+                    const { Services: importedServices } =
+                      g.ChromeUtils.importESModule(
+                        "resource://gre/modules/Services.sys.mjs",
+                      );
+                    if (importedServices && importedServices.prompt) {
+                      promptService = importedServices.prompt;
                     }
                   }
                 } catch (err) {
-                  ztoolkit.log("Error in fallback prompt: " + err);
+                  ztoolkit.log("Error getting prompt service: " + err);
                 }
-              }
 
-              if (chosenLocale) {
-                activeLocale = chosenLocale;
-                lastValue = chosenLocale;
-                if (!locales.includes(chosenLocale)) {
-                  locales.push(chosenLocale);
-                  locales.sort((a, b) => {
-                    if (a === "pt-BR") return -1;
-                    if (b === "pt-BR") return 1;
-                    return a.localeCompare(b);
-                  });
+                if (promptService) {
+                  try {
+                    const selection = { value: 0 };
+                    let ok = false;
+                    try {
+                      // Try modern Gecko signature (without length parameter)
+                      ok = promptService.select(
+                        Zotero.getMainWindow(),
+                        "Outro Idioma",
+                        "Selecione um idioma da lista:",
+                        otherLocales,
+                        selection,
+                      );
+                    } catch (e) {
+                      // Fallback to legacy Gecko signature (with length parameter)
+                      ok = promptService.select(
+                        Zotero.getMainWindow(),
+                        "Outro Idioma",
+                        "Selecione um idioma da lista:",
+                        otherLocales.length,
+                        otherLocales,
+                        selection,
+                      );
+                    }
+
+                    if (ok) {
+                      chosenLocale = otherLocales[selection.value];
+                    }
+                  } catch (err) {
+                    ztoolkit.log("Error showing select prompt: " + err);
+                  }
                 }
-                renderLocaleOptions();
-                localeSelect.value = chosenLocale;
-                setPref("selectedLocaleFilter", chosenLocale);
-                populateVoicesForLocale(chosenLocale);
+
+                // Fallback to text input if select prompt failed or wasn't available
+                if (!promptService && !chosenLocale) {
+                  try {
+                    const promptWin = (doc.defaultView ||
+                      Zotero.getMainWindow()) as any;
+                    const input = promptWin.prompt(
+                      "Digite o código do idioma (ex: ja-JP, zh-CN, ru-RU):",
+                      "",
+                    );
+                    if (input && input.trim()) {
+                      const cleanInput = input.trim().toLowerCase();
+                      chosenLocale =
+                        allLocales.find(
+                          (loc) => loc.toLowerCase() === cleanInput,
+                        ) || null;
+                      if (!chosenLocale) {
+                        promptWin.alert(
+                          "Idioma '" + input + "' não encontrado!",
+                        );
+                      }
+                    }
+                  } catch (err) {
+                    ztoolkit.log("Error in fallback prompt: " + err);
+                  }
+                }
+
+                if (chosenLocale) {
+                  activeLocale = chosenLocale;
+                  lastValue = chosenLocale;
+                  if (!locales.includes(chosenLocale)) {
+                    locales.push(chosenLocale);
+                    locales.sort((a, b) => {
+                      if (a === "pt-BR") return -1;
+                      if (b === "pt-BR") return 1;
+                      return a.localeCompare(b);
+                    });
+                  }
+                  renderLocaleOptions();
+                  localeSelect.value = chosenLocale;
+                  setPref("selectedLocaleFilter", chosenLocale);
+                  populateVoicesForLocale(chosenLocale);
+                } else {
+                  localeSelect.value = lastValue;
+                }
               } else {
-                localeSelect.value = lastValue;
+                activeLocale = val;
+                lastValue = val;
+                setPref("selectedLocaleFilter", val);
+                populateVoicesForLocale(val);
               }
-            } else {
-              activeLocale = val;
-              lastValue = val;
-              setPref("selectedLocaleFilter", val);
-              populateVoicesForLocale(val);
-            }
+            });
+          })
+          .catch((err) => {
+            ztoolkit.log("Error loading voices in popup: " + err);
           });
-
-        }).catch((err) => {
-          ztoolkit.log("Error loading voices in popup: " + err);
-        });
 
         voiceSelect.addEventListener("change", (e: any) => {
           setPref("voice", e.target.value);
@@ -633,11 +676,12 @@ export function registerReaderSelectionPopup() {
                   el.style.minWidth = "370px";
                 }
               }
-              if (el.classList && (
-                el.classList.contains("reader-selection-popup") || 
-                el.classList.contains("xp-popup") ||
-                (el.id && el.id.includes("popup"))
-              )) {
+              if (
+                el.classList &&
+                (el.classList.contains("reader-selection-popup") ||
+                  el.classList.contains("xp-popup") ||
+                  (el.id && el.id.includes("popup")))
+              ) {
                 el.style.width = "auto";
                 el.style.maxWidth = "none";
                 el.style.minWidth = "370px";
@@ -652,6 +696,6 @@ export function registerReaderSelectionPopup() {
         ztoolkit.log("Error rendering selection popup: " + err);
       }
     },
-    addon.data.config.addonID
+    addon.data.config.addonID,
   );
 }

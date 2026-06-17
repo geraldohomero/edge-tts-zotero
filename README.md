@@ -34,6 +34,7 @@ pip install edge-tts
 ## Usage
 
 ### Read Aloud
+
 1. Open a PDF in Zotero's reader
 2. Select the text you want to hear
 3. Use any of these methods:
@@ -42,10 +43,12 @@ pip install edge-tts
    - **Tools menu** → "🔊 Read Aloud (Edge TTS)"
 
 ### Stop Reading
+
 - Press `Ctrl+Shift+X`
 - Or use the menu: "⏹ Stop Reading"
 
 ### Settings
+
 Go to **Tools → Add-ons → Edge TTS for Zotero → Preferences**:
 
 - **Voice**: Choose from all available Edge TTS voices, grouped by locale
@@ -55,15 +58,15 @@ Go to **Tools → Add-ons → Edge TTS for Zotero → Preferences**:
 
 ## Popular Voices
 
-| Voice | Language | Gender |
-|-------|----------|--------|
+| Voice                   | Language            | Gender |
+| ----------------------- | ------------------- | ------ |
 | `pt-BR-FranciscaNeural` | Portuguese (Brazil) | Female |
-| `pt-BR-AntonioNeural` | Portuguese (Brazil) | Male |
-| `en-US-JennyNeural` | English (US) | Female |
-| `en-US-GuyNeural` | English (US) | Male |
-| `en-GB-SoniaNeural` | English (UK) | Female |
-| `es-ES-ElviraNeural` | Spanish (Spain) | Female |
-| `fr-FR-DeniseNeural` | French (France) | Female |
+| `pt-BR-AntonioNeural`   | Portuguese (Brazil) | Male   |
+| `en-US-JennyNeural`     | English (US)        | Female |
+| `en-US-GuyNeural`       | English (US)        | Male   |
+| `en-GB-SoniaNeural`     | English (UK)        | Female |
+| `es-ES-ElviraNeural`    | Spanish (Spain)     | Female |
+| `fr-FR-DeniseNeural`    | French (France)     | Female |
 
 > Run `edge-tts --list-voices` to see all 300+ available voices.
 

@@ -255,7 +255,10 @@ function getDefaultVoices(): VoiceInfo[] {
  */
 export async function speak(
   text: string,
-  onProgress?: (percent: number, status: "generating" | "playing" | "finished" | "error") => void
+  onProgress?: (
+    percent: number,
+    status: "generating" | "playing" | "finished" | "error",
+  ) => void,
 ): Promise<void> {
   if (currentState !== "idle") {
     await stop();
@@ -269,7 +272,10 @@ export async function speak(
 
   currentState = "generating";
   const win = Zotero.getMainWindow();
-  currentAbortController = win && (win as any).AbortController ? new (win as any).AbortController() : null;
+  currentAbortController =
+    win && (win as any).AbortController
+      ? new (win as any).AbortController()
+      : null;
 
   const voice = getPref("voice") || "pt-BR-FranciscaNeural";
   const rateStr = getPref("rate") || "1.0";
@@ -277,7 +283,11 @@ export async function speak(
   const edgeTTSRate = rateToEdgeTTS(rate);
 
   let popupWin: any = null;
-  const notifyProgress = (percent: number, status: "generating" | "playing" | "finished" | "error", label: string) => {
+  const notifyProgress = (
+    percent: number,
+    status: "generating" | "playing" | "finished" | "error",
+    label: string,
+  ) => {
     if (onProgress) {
       try {
         onProgress(percent, status);
@@ -286,13 +296,10 @@ export async function speak(
       }
     } else {
       if (!popupWin && status !== "error" && status !== "finished") {
-        popupWin = new ztoolkit.ProgressWindow(
-          addon.data.config.addonName,
-          {
-            closeOnClick: true,
-            closeTime: -1,
-          },
-        )
+        popupWin = new ztoolkit.ProgressWindow(addon.data.config.addonName, {
+          closeOnClick: true,
+          closeTime: -1,
+        })
           .createLine({
             text: label,
             type: "default",
@@ -363,12 +370,14 @@ export async function speak(
 
     // Set callback to notify completion
     const playbackPromise = playAudio(outputFile);
-    playbackPromise.then(() => {
-      notifyProgress(100, "finished", getString("tts-finished"));
-    }).catch((err) => {
-      ztoolkit.log("Playback ended with error: " + err);
-      notifyProgress(0, "error", getString("tts-error"));
-    });
+    playbackPromise
+      .then(() => {
+        notifyProgress(100, "finished", getString("tts-finished"));
+      })
+      .catch((err) => {
+        ztoolkit.log("Playback ended with error: " + err);
+        notifyProgress(0, "error", getString("tts-error"));
+      });
 
     await playbackPromise;
 

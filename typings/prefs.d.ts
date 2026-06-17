@@ -7,8 +7,10 @@
 declare namespace _ZoteroTypes {
   interface Prefs {
     PluginPrefsMap: {
-      "enable": boolean;
-      "input": string;
+      "voice": string;
+      "rate": string;
+      "pythonPath": string;
+      "selectedLocaleFilter": string;
     };
   }
 }

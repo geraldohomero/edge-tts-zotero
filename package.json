@@ -1,24 +1,24 @@
 {
-  "name": "zotero-plugin-template",
+  "name": "edge-tts-zotero",
   "type": "module",
-  "version": "3.1.0",
-  "description": "Zotero Plugin Template",
+  "version": "1.0.3",
+  "description": "Read aloud selected text in Zotero using Microsoft Edge TTS neural voices",
   "config": {
-    "addonName": "Zotero Plugin Template",
-    "addonID": "addontemplate@euclpts.com",
-    "addonRef": "addontemplate",
-    "addonInstance": "AddonTemplate",
-    "prefsPrefix": "extensions.zotero.addontemplate"
+    "addonName": "Edge TTS for Zotero",
+    "addonID": "edge-tts-zotero@geraldohomero",
+    "addonRef": "edgettsZotero",
+    "addonInstance": "EdgeTTSZotero",
+    "prefsPrefix": "extensions.zotero.edgettsZotero"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/windingwind/zotero-plugin-template.git"
+    "url": "git+https://github.com/geraldohomero/edge-tts-zotero.git"
   },
-  "author": "windingwind",
+  "author": "geraldohomero",
   "bugs": {
-    "url": "https://github.com/windingwind/zotero-plugin-template/issues"
+    "url": "https://github.com/geraldohomero/edge-tts-zotero/issues"
   },
-  "homepage": "https://github.com/windingwind/zotero-plugin-template#readme",
+  "homepage": "https://github.com/geraldohomero/edge-tts-zotero#readme",
   "license": "AGPL-3.0-or-later",
   "scripts": {
     "start": "zotero-plugin serve",

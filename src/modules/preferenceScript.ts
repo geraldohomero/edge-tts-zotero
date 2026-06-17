@@ -1,131 +1,156 @@
-import { config } from "../../package.json";
-import { getString } from "../utils/locale";
+import { getVoices, VoiceInfo } from "./tts";
+import { getPref, setPref } from "../utils/prefs";
 
-export async function registerPrefsScripts(_window: Window) {
-  // This function is called when the prefs window is opened
-  // See addon/content/preferences.xhtml onpaneload
-  if (!addon.data.prefs) {
-    addon.data.prefs = {
-      window: _window,
-      columns: [
-        {
-          dataKey: "title",
-          label: getString("prefs-table-title"),
-          fixedWidth: true,
-          width: 100,
-        },
-        {
-          dataKey: "detail",
-          label: getString("prefs-table-detail"),
-        },
-      ],
-      rows: [
-        {
-          title: "Orange",
-          detail: "It's juicy",
-        },
-        {
-          title: "Banana",
-          detail: "It's sweet",
-        },
-        {
-          title: "Apple",
-          detail: "I mean the fruit APPLE",
-        },
-      ],
-    };
-  } else {
-    addon.data.prefs.window = _window;
-  }
-  updatePrefsUI();
-  bindPrefEvents();
+/**
+ * Register preference scripts when the preference pane is loaded.
+ */
+export async function registerPrefsScripts(win: Window) {
+  const doc = win.document;
+
+  // Populate voice selector
+  await populateVoiceSelector(doc);
+
+  // Set up speed selector
+  setupSpeedSelector(doc);
+
+  // Set up python path field
+  setupPythonPath(doc);
+
+  // Set up test button
+  setupTestButton(doc);
 }
 
-async function updatePrefsUI() {
-  // You can initialize some UI elements on prefs window
-  // with addon.data.prefs.window.document
-  // Or bind some events to the elements
-  const renderLock = ztoolkit.getGlobal("Zotero").Promise.defer();
-  if (addon.data.prefs?.window == undefined) return;
-  const tableHelper = new ztoolkit.VirtualizedTable(addon.data.prefs?.window)
-    .setContainerId(`${config.addonRef}-table-container`)
-    .setProp({
-      id: `${config.addonRef}-prefs-table`,
-      // Do not use setLocale, as it modifies the Zotero.Intl.strings
-      // Set locales directly to columns
-      columns: addon.data.prefs?.columns,
-      showHeader: true,
-      multiSelect: true,
-      staticColumns: true,
-      disableFontSizeScaling: true,
-    })
-    .setProp("getRowCount", () => addon.data.prefs?.rows.length || 0)
-    .setProp(
-      "getRowData",
-      (index) =>
-        addon.data.prefs?.rows[index] || {
-          title: "no data",
-          detail: "no data",
-        },
-    )
-    // Show a progress window when selection changes
-    .setProp("onSelectionChange", (selection) => {
-      new ztoolkit.ProgressWindow(config.addonName)
-        .createLine({
-          text: `Selected line: ${addon.data.prefs?.rows
-            .filter((v, i) => selection.isSelected(i))
-            .map((row) => row.title)
-            .join(",")}`,
-          progress: 100,
-        })
-        .show();
-    })
-    // When pressing delete, delete selected line and refresh table.
-    // Returning false to prevent default event.
-    .setProp("onKeyDown", (event: KeyboardEvent) => {
-      if (event.key == "Delete" || (Zotero.isMac && event.key == "Backspace")) {
-        addon.data.prefs!.rows =
-          addon.data.prefs?.rows.filter(
-            (v, i) => !tableHelper.treeInstance.selection.isSelected(i),
-          ) || [];
-        tableHelper.render();
-        return false;
+/**
+ * Populate the voice dropdown with all available Edge TTS voices.
+ */
+async function populateVoiceSelector(doc: Document) {
+  const voiceSelect = doc.getElementById(
+    `zotero-prefpane-${addon.data.config.addonRef}-voice`,
+  ) as HTMLSelectElement | null;
+
+  if (!voiceSelect) return;
+
+  // Show loading state
+  voiceSelect.innerHTML = "";
+  const loadingOption = doc.createElement("option");
+  loadingOption.textContent = "Loading voices...";
+  loadingOption.value = "";
+  voiceSelect.appendChild(loadingOption);
+
+  try {
+    const voices = await getVoices();
+    voiceSelect.innerHTML = "";
+
+    // Group voices by locale
+    const grouped = new Map<string, VoiceInfo[]>();
+    for (const voice of voices) {
+      const locale = voice.locale || "Other";
+      if (!grouped.has(locale)) {
+        grouped.set(locale, []);
       }
-      return true;
-    })
-    // For find-as-you-type
-    .setProp(
-      "getRowString",
-      (index) => addon.data.prefs?.rows[index].title || "",
-    )
-    // Render the table.
-    .render(-1, () => {
-      renderLock.resolve();
+      grouped.get(locale)!.push(voice);
+    }
+
+    // Create optgroups for each locale
+    const currentVoice = getPref("voice") as string;
+
+    for (const [locale, localeVoices] of grouped) {
+      const optgroup = doc.createElement("optgroup");
+      optgroup.label = locale;
+
+      for (const voice of localeVoices) {
+        const option = doc.createElement("option");
+        option.value = voice.shortName;
+        // Show: "Francisca (Female)" instead of the full MS name
+        const simpleName = voice.shortName
+          .replace(/^[a-z]{2}-[A-Z]{2}-/, "")
+          .replace(/Neural$/, "");
+        option.textContent = `${simpleName} (${voice.gender})`;
+        if (voice.shortName === currentVoice) {
+          option.selected = true;
+        }
+        optgroup.appendChild(option);
+      }
+
+      voiceSelect.appendChild(optgroup);
+    }
+
+    // Listen for changes
+    voiceSelect.addEventListener("change", () => {
+      setPref("voice", voiceSelect.value as any);
     });
-  await renderLock.promise;
-  ztoolkit.log("Preference table rendered!");
+  } catch (e) {
+    voiceSelect.innerHTML = "";
+    const errorOption = doc.createElement("option");
+    errorOption.textContent = "Error loading voices. Is edge-tts installed?";
+    errorOption.value = "";
+    voiceSelect.appendChild(errorOption);
+  }
 }
 
-function bindPrefEvents() {
-  addon.data
-    .prefs!.window.document?.querySelector(
-      `#zotero-prefpane-${config.addonRef}-enable`,
-    )
-    ?.addEventListener("command", (e: Event) => {
-      ztoolkit.log(e);
-      addon.data.prefs!.window.alert(
-        `Successfully changed to ${(e.target as XUL.Checkbox).checked}!`,
-      );
-    });
+/**
+ * Set up the speed/rate selector (0.5x to 4.0x).
+ */
+function setupSpeedSelector(doc: Document) {
+  const speedRange = doc.getElementById(
+    `zotero-prefpane-${addon.data.config.addonRef}-rate-range`,
+  ) as HTMLInputElement | null;
 
-  addon.data
-    .prefs!.window.document?.querySelector(
-      `#zotero-prefpane-${config.addonRef}-input`,
-    )
-    ?.addEventListener("change", (e: Event) => {
-      ztoolkit.log(e);
-      addon.data.prefs!.window.alert(
-        `Successfully changed to ${(e.target as HTMLInputElement).value}!`,
-      );
-    });
+  const speedLabel = doc.getElementById(
+    `zotero-prefpane-${addon.data.config.addonRef}-rate-value`,
+  );
+
+  if (!speedRange) return;
+
+  const currentRate = parseFloat((getPref("rate") as string) || "1.0");
+  speedRange.value = String(currentRate);
+  if (speedLabel) {
+    speedLabel.textContent = `${currentRate.toFixed(1)}x`;
+  }
+
+  speedRange.addEventListener("input", () => {
+    const val = parseFloat(speedRange.value);
+    if (speedLabel) {
+      speedLabel.textContent = `${val.toFixed(1)}x`;
+    }
+    setPref("rate", val.toFixed(1) as any);
+  });
+}
+
+/**
+ * Set up the Python path field.
+ */
+function setupPythonPath(doc: Document) {
+  const pythonInput = doc.getElementById(
+    `zotero-prefpane-${addon.data.config.addonRef}-python-path`,
+  ) as HTMLInputElement | null;
+
+  if (!pythonInput) return;
+
+  const currentPath = (getPref("pythonPath") as string) || "";
+  pythonInput.value = currentPath;
+  pythonInput.placeholder = "Auto-detect (leave empty)";
+
+  pythonInput.addEventListener("change", () => {
+    setPref("pythonPath", pythonInput.value as any);
+  });
+}
+
+/**
+ * Set up the test voice button.
+ */
+function setupTestButton(doc: Document) {
+  const testBtn = doc.getElementById(
+    `zotero-prefpane-${addon.data.config.addonRef}-test-voice`,
+  );
+
+  if (!testBtn) return;
+
+  testBtn.addEventListener("click", async () => {
+    const { speak, stop } = await import("./tts");
+    // Stop any current playback first
+    await stop();
+    // Speak a test phrase
+    await speak("Hello! This is a test of Edge TTS for Zotero.");
+  });
 }
